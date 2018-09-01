@@ -24,6 +24,12 @@ class Helper {
         return accountAddress
     }
 
+    async getAccountAddressHex(accountAddress) {
+        const accountAddressHex = await this.rpc.rawCall('gethexaddress', [ accountAddress ])
+        console.log(`Hex address of Qtum address '${accountAddress}': ${accountAddressHex}`)
+        return accountAddressHex
+    }
+
     async transferQTUM(receiver, amount) {
         const transactionId = await this.rpc.rawCall('sendtoaddress', [ receiver, amount ])
         console.log(`Sent ${amount} QTUM to address ${receiver} with transaction ${transactionId}`)

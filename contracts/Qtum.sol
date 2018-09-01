@@ -1,10 +1,11 @@
-pragma solidity ^0.4.23;
+pragma solidity ^0.4.24;
 
 import './QRC20Token.sol';
 import './SafeMath.sol';
+import "./crypto/Secp256k1.sol";
 
 
-contract l2dex is SafeMath {
+contract Qtum is SafeMath {
 
   enum State { CanWithdraw, CantWithdraw }
 
@@ -147,20 +148,25 @@ contract l2dex is SafeMath {
   /**
    * @dev Updates channel with most recent amount by user or by contract owner (for ether only).
    */
-  function updateChannel(address channelOwner, uint256 nonce, uint256 amount, uint8 v, bytes32 r, bytes32 s) public {
-    updateChannel(channelOwner, nonce, address(0), amount, v, r, s);
+  function updateChannel(address channelOwner, uint256 amount, uint256 nonce, uint256[2] signature, uint256[2] signerPublicKey) public {
+    updateChannel(channelOwner, address(0), amount, nonce, signature, signerPublicKey);
   }
 
   /**
    * @dev Updates channel with most recent amount by user or by contract owner.
    */
-  function updateChannel(address channelOwner, uint256 nonce, address token, uint256 amount, uint8 v, bytes32 r, bytes32 s) public {
+  function updateChannel(address channelOwner, address token, uint256 amount, uint256 nonce, uint256[2] signature, uint256[2] signerPublicKey) public {
     require(channels[channelOwner].expiration > 0 && nonce > channels[channelOwner].accounts[token].nonce);
-    address recoveredOwner = ecrecover(keccak256(abi.encodePacked(channelOwner, nonce, amount)), v, r, s);
-    if (recoveredOwner == channelOwner) {
+    // Make sure signature is created using private key paired with specified public key and is valid
+    bytes32 messageHash = sha256(abi.encodePacked(channelOwner, token, nonce, amount));
+    require(Secp256k1.validateSignature(messageHash, signature, signerPublicKey));
+    // Calculate Ethereum address from public
+    bytes32 signerPublicKeyHash = sha256(abi.encodePacked(signerPublicKey[0]));
+    address signerAddress = address(ripemd160(abi.encodePacked(signerPublicKeyHash)));
+    if (signerAddress == channelOwner) {
       // Transaction from user who owns the channel
       require(now >= channels[channelOwner].expiration || msg.sender == owner);
-    } else if (recoveredOwner == owner) {
+    } else if (signerAddress == owner) {
       // Transaction from the contract owner
       require(now >= channels[channelOwner].expiration || msg.sender == channelOwner);
       channels[channelOwner].accounts[token].state = State.CantWithdraw; // TODO: Make sure it is safe

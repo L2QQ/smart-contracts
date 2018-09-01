@@ -265,8 +265,8 @@ library Secp256k1 {
         {
             dwPtr := mload(0x40)
             mstore(0x40, add(dwPtr, 512)) // Should lower this.
-            for { let dm := 0 } not(iszero(d)) {} {
-                if not(iszero(and(d, 1))) {
+            for { let dm := 0 } gt(d, 0) { } {
+                if gt(and(d, 1), 0) {
                     dm := mod(d, 32)
                     mstore8(add(dwPtr, i), dm) // Don't store as signed - convert when reading.
                     d := add(sub(d, dm), mul(gt(dm, 16), 32))

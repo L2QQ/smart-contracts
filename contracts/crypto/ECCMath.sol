@@ -50,7 +50,7 @@ library ECCMath {
         r = 1;
         uint bit = 2 ** 255;
         assembly {
-            for {} not(iszero(bit)) { bit := div(bit, 16) } {
+            for { } gt(bit, 0) { bit := div(bit, 16) } {
                 r := mulmod(mulmod(r, r, m), exp(b, iszero(iszero(and(e, bit)))), m)
                 r := mulmod(mulmod(r, r, m), exp(b, iszero(iszero(and(e, div(bit, 2))))), m)
                 r := mulmod(mulmod(r, r, m), exp(b, iszero(iszero(and(e, div(bit, 4))))), m)

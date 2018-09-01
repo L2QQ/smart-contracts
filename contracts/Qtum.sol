@@ -156,11 +156,12 @@ contract Qtum is SafeMath {
    * @dev Updates channel with most recent amount by user or by contract owner.
    */
   function updateChannel(address channelOwner, address token, uint256 amount, uint256 nonce, uint256[2] signature, uint256[2] signerPublicKey) public {
+    // TODO: Is it possible to validate message signed by Qtum private key without requesting public key?
     require(channels[channelOwner].expiration > 0 && nonce > channels[channelOwner].accounts[token].nonce);
     // Make sure signature is created using private key paired with specified public key and is valid
     bytes32 messageHash = sha256(abi.encodePacked(channelOwner, token, nonce, amount));
     require(Secp256k1.validateSignature(messageHash, signature, signerPublicKey));
-    // Calculate Ethereum address from public
+    // Calculate Ethereum address from public like Qtum does
     bytes32 signerPublicKeyHash = sha256(abi.encodePacked(signerPublicKey[0]));
     address signerAddress = address(ripemd160(abi.encodePacked(signerPublicKeyHash)));
     if (signerAddress == channelOwner) {

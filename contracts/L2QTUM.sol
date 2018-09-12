@@ -9,6 +9,7 @@ contract L2QTUM is L2 {
     bytes4 private ecrpkFunctionHash;
 
     constructor(address _oracle, address _ecrpkAddress) L2(_oracle) public {
+        require(_ecrpkAddress != address(0));
         ecrpkAddress = _ecrpkAddress;
         ecrpkFunctionHash = bytes4(keccak256("ecrecover(uint256,uint256,uint256,uint256)"));
     }

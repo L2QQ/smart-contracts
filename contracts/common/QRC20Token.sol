@@ -5,11 +5,12 @@ import './SafeMath.sol';
 
 
 /// @title QRC20 Token standard implementation
-contract QRC20Token is QRC20, SafeMath {
+contract QRC20Token is QRC20 {
+    using SafeMath for uint256;
 
     string public constant standard = 'Token 0.1';
 
-    uint8 public decimals; // it's recommended to set decimals to 8 in QTUM
+    uint8 public decimals;
     string public name;
     string public symbol;
 
@@ -42,8 +43,8 @@ contract QRC20Token is QRC20, SafeMath {
         validAddress(_to)
         returns (bool success)
     {
-        balanceOf[msg.sender] = safeSub(balanceOf[msg.sender], _value);
-        balanceOf[_to] = safeAdd(balanceOf[_to], _value);
+        balanceOf[msg.sender] = balanceOf[msg.sender].sub(_value);
+        balanceOf[_to] = balanceOf[_to].add(_value);
         emit Transfer(msg.sender, _to, _value);
         return true;
     }
@@ -58,9 +59,9 @@ contract QRC20Token is QRC20, SafeMath {
         validAddress(_to)
         returns (bool success)
     {
-        allowance[_from][msg.sender] = safeSub(allowance[_from][msg.sender], _value);
-        balanceOf[_from] = safeSub(balanceOf[_from], _value);
-        balanceOf[_to] = safeAdd(balanceOf[_to], _value);
+        allowance[_from][msg.sender] = allowance[_from][msg.sender].sub(_value);
+        balanceOf[_from] = balanceOf[_from].sub(_value);
+        balanceOf[_to] = balanceOf[_to].add(_value);
         emit Transfer(_from, _to, _value);
         return true;
     }

@@ -29,7 +29,8 @@ contract L2QTUM is L2 {
         address ecrpkAddress_ = ecrpkAddress;
         bytes4 ecrpkFunctionHash_ = ecrpkFunctionHash;
         // Recover public key from message hash and signature
-        bytes32 publicKey;
+        bytes32 publicKeyX;
+        bytes32 publicKeyY;
         assembly {
             let ptr := mload(0x40)
             mstore(ptr, ecrpkFunctionHash_)
@@ -37,25 +38,27 @@ contract L2QTUM is L2 {
             mstore(add(ptr, 0x24), v)
             mstore(add(ptr, 0x44), r)
             mstore(add(ptr, 0x64), s)
-            let result := call(gas, ecrpkAddress_, 0, ptr, 0x84, ptr, 0x60)
+            let result := call(gas, ecrpkAddress_, 0, ptr, 0x84, ptr, 0x80)
             if eq(result, 0) {
                 revert(0, 0)
             }
-            publicKey := mload(add(ptr, 0x40))
+            publicKeyX := mload(add(ptr, 0x40))
+            publicKeyY := mload(add(ptr, 0x60))
             mstore(0x40, add(ptr, 0x84))
         }
         // Get SHA256 hash of just recovered public key
         // Hack: call sha256() method using assembly since usual calling sha256() fails for some reason
         bytes32 publicKeyHash;
+        uint8 prefix = (publicKeyY & 1) == 0 ? 2 : 3;
         assembly {
             let ptr := mload(0x40)
-            mstore8(ptr, 0x03)
-            mstore(add(ptr, 0x01), publicKey)
+            mstore8(ptr, prefix)
+            mstore(add(ptr, 0x01), publicKeyX)
             let result := call(gas, 2, 0, ptr, 0x21, ptr, 0x20)
             if eq(result, 0) {
                 revert(0, 0)
             }
-            publicKeyHash := mload(add(ptr, 0x0))
+            publicKeyHash := mload(ptr)
             mstore(0x40, add(ptr, 0x22))
         }
         // Get RIPEMD160 hash receiving signer address which can be compared to `msg.sender`

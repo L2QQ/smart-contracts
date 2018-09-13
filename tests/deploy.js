@@ -51,7 +51,7 @@ async function deployQRC20(name, symbol, decimals) {
     if (transactionReceipt[0].excepted != 'None') {
         throw new Error('Unable to deploy QRC20 token to QTUM')
     }
-    console.log(`QRC20 token '${name}' (${symbol}) deployed to QTUM at address: ${result.address}`)
+    console.log(`QRC20 token '${name}' (${symbol}) deployed to QTUM at address: 0x${result.address}`)
     return result
 }
 
@@ -62,7 +62,7 @@ async function deployECRecoverPublicKey() {
     if (transactionReceipt[0].excepted != 'None') {
         throw new Error('Unable to deploy ECRecoverPublicKey contract to QTUM')
     }
-    console.log(`ECRecoverPublicKey contract deployed to QTUM at address: ${result.address}`)
+    console.log(`ECRecoverPublicKey contract deployed to QTUM at address: 0x${result.address}`)
     return result
 }
 
@@ -86,7 +86,7 @@ async function deployL2Qtum(ecrpkAddress) {
     if (transactionReceipt[0].excepted != 'None') {
         throw new Error('Unable to deploy L2 contract to QTUM')
     }
-    console.log(`L2 contract deployed to QTUM at address: ${result.address}`)
+    console.log(`L2 contract deployed to QTUM at address: 0x${result.address}`)
     return result
 }
 

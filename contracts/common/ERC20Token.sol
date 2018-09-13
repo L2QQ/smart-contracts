@@ -19,9 +19,6 @@ contract ERC20Token is ERC20 {
     mapping (address => uint256) public balanceOf;
     mapping (address => mapping (address => uint256)) public allowance;
 
-    event Transfer(address indexed _from, address indexed _to, uint256 _value);
-    event Approval(address indexed _owner, address indexed _spender, uint256 _value);
-
     modifier validAddress(address _address) {
         require(_address != 0x0);
         _;
@@ -33,6 +30,18 @@ contract ERC20Token is ERC20 {
         decimals = _decimals;
         totalSupply = 10**9 * 10**uint256(decimals);
         balanceOf[msg.sender] = totalSupply;
+    }
+
+    function totalSupply() public view returns (uint256) {
+        return totalSupply;
+    }
+
+    function balanceOf(address _owner) public view returns (uint256) {
+        return balanceOf[_owner];
+    }
+    
+    function allowance(address _owner, address _spender) public view returns (uint256) {
+        return allowance[_owner][_spender];
     }
 
     function transfer(

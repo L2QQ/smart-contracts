@@ -26,6 +26,18 @@ module.exports = {
                 privateKey: Buffer.from('f40258936a170b35d5f18fa7c49c47c25522fb35a71a46c24d257b13e369c6f9', 'hex'),
                 address: '0xAD1219e0A29Fc581De227622535bb2A781bDfDe6'.toLocaleLowerCase()
             }
+        },
+        tokens: {
+            OMG: {
+                name: 'OMGToken',
+                symbol: 'OMG',
+                decimals: 18
+            },
+            USDT: {
+                name: 'Tether',
+                symbol: 'USDT',
+                decimals: 6
+            }
         }
     },
     qtum: {
@@ -64,6 +76,23 @@ module.exports = {
             userC: {
                 account: 'user_c',
                 address: 'qdq9dGXuJrgXUEhD8FeHXurUvhBKZuBpSF'
+            }
+        },
+        tokens: {
+            INK: {
+                name: 'INK Coin',
+                symbol: 'INK',
+                decimals: 9
+            },
+            BOT: {
+                name: 'Bodhi',
+                symbol: 'BOT',
+                decimals: 8
+            },
+            QBT: {
+                name: 'Qbao',
+                symbol: 'QBT',
+                decimals: 8
             }
         }
     }

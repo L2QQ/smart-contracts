@@ -79,7 +79,7 @@ async function deployL2Ethereum() {
 }
 
 async function deployL2Qtum(ecrpkAddress) {
-    const oracleAddress = helperQtum.addressQtumToEthereum(config.qtum.accounts.l2Oracle.address)
+    const oracleAddress = helperQtum.addressQtumToAddressEthereum(config.qtum.accounts.l2Oracle.address)
     const creatorAddress = config.qtum.accounts.l2Owner.address
     const result = await helperQtum.deployL2(oracleAddress, ecrpkAddress, creatorAddress)
     const transactionReceipt = await waitForTransactionQtum(result.txid)
@@ -92,13 +92,15 @@ async function deployL2Qtum(ecrpkAddress) {
 
 async function deployTestTokens() {
 
-    const erc20TokenA = await deployERC20('L2E Test Token A', 'L2EA', 18)
-    const erc20TokenB = await deployERC20('L2E Test Token B', 'L2EB', 18)
-    const erc20TokenC = await deployERC20('L2E Test Token C', 'L2EC', 18)
+    for (const symbol in config.ethereum.tokens) {
+        const token = config.ethereum.tokens[symbol]
+        const result = await deployERC20(token.name, token.symbol, token.decimals)
+    }
 
-    const qrc20TokenA = await deployQRC20('L2Q Test Token A', 'L2QA', 8)
-    const qrc20TokenB = await deployQRC20('L2Q Test Token B', 'L2QB', 8)
-    const qrc20TokenC = await deployQRC20('L2Q Test Token C', 'L2QC', 8)
+    for (const symbol in config.qtum.tokens) {
+        const token = config.qtum.tokens[symbol]
+        const result = await deployQRC20(token.name, token.symbol, token.decimals)
+    }
 }
 
 async function deployL2() {

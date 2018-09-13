@@ -63,5 +63,3 @@ async function getBalances() {
 }
 
 getBalances()
-
-//helperQtum.requestNewAddress('l2_owner')

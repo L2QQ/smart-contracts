@@ -27,9 +27,9 @@ contract L2 {
 
 
     // Minimal TTL that can be used to extend existing channel
-    uint256 constant TTL_MIN = 1 minutes; // TODO: Short time only for tests
+    uint256 constant TTL_MIN = 2 days;
     // Initial TTL for new channels created just after the first deposit
-    uint256 constant TTL_DEFAULT = 10 minutes; // TODO: Short time only for tests
+    uint256 constant TTL_DEFAULT = 14 days;
 
     // Address of account which has all permissions to manage channels
     address public owner;

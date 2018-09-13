@@ -24,7 +24,8 @@ class HelperEthereum {
     }
 
     async requestBalance(address) {
-        return Web3.utils.fromWei(await this.web3.eth.getBalance(address), 'ether')
+        const balance = await this.web3.eth.getBalance(address)
+        return Web3.utils.fromWei(balance, 'ether')
     }
 
     async deployToken(name, symbol, decimals, creatorAddress, creatorPrivateKey) {
@@ -99,7 +100,7 @@ class HelperEthereum {
             privateKey: senderPrivateKey
         }
         const signedTransaction = this.signTransaction(transaction)
-        return await this.sendSignedTransaction(signedTransaction)
+        return this.sendSignedTransaction(signedTransaction)
     }
 
     // Signs transaction offline so it is ready to send to a blockchain
@@ -130,14 +131,14 @@ class HelperEthereum {
 
     // Sends signed raw transaction to a blockchain
     // signedTransaction - signed raw transaction ready to send a blockchain as Buffer
-    async sendSignedTransaction(signedTransaction) {
+    sendSignedTransaction(signedTransaction) {
         const signedTransactionHex = `0x${signedTransaction.toString('hex')}`
         return this.web3.eth.sendSignedTransaction(signedTransactionHex)
     }
 
     // Determines nonce should be used next for a transaction
     // address - address of transaction sender in hex format starting from '0x' as string
-    async getNonce(address) {
+    getNonce(address) {
         return this.web3.eth.getTransactionCount(address)
     }
 

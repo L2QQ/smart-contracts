@@ -32,41 +32,41 @@ class HelperQtum {
         this.gasPrice = 0.0000005
     }
 
-    async requestAddressesByAccount(accountName = '') {
-        return await this.rpc.rawCall('getaddressesbyaccount', [ accountName ])
+    requestAddressesByAccount(accountName = '') {
+        return this.rpc.rawCall('getaddressesbyaccount', [ accountName ])
     }
 
-    async requestAccountBalance(accountName = '') {
-        return await this.rpc.rawCall('getbalance', [ accountName ])
+    requestAccountBalance(accountName = '') {
+        return this.rpc.rawCall('getbalance', [ accountName ])
     }
 
-    async requestReceivedByAccount(accountName = '') {
-        return await this.rpc.rawCall('getreceivedbyaccount', [ accountName ])
+    requestReceivedByAccount(accountName = '') {
+        return this.rpc.rawCall('getreceivedbyaccount', [ accountName ])
     }
 
-    async requestReceivedByAddress(address) {
-        return await this.rpc.rawCall('getreceivedbyaddress', [ address ])
+    requestReceivedByAddress(address) {
+        return this.rpc.rawCall('getreceivedbyaddress', [ address ])
     }
 
-    async requestNewAddress(accountName = '') {
-        return await this.rpc.rawCall('getnewaddress', [ accountName ])
+    requestNewAddress(accountName = '') {
+        return this.rpc.rawCall('getnewaddress', [ accountName ])
     }
 
-    async requestTransaction(transactionId) {
+    requestTransaction(transactionId) {
         return this.rpc.rawCall('gettransaction', [ transactionId ])
     }
 
-    async requestTransactionReceipt(transactionId) {
+    requestTransactionReceipt(transactionId) {
         return this.rpc.rawCall('gettransactionreceipt', [ transactionId ])
     }
 
     // DEPLOY CONTRACTS
 
-    async deployECRecoverPublicKey(creatorAddress) {
+    deployECRecoverPublicKey(creatorAddress) {
         return this.rpc.rawCall('createcontract', [ this.contracts.ecrpk.bin, this.gasLimit, this.gasPrice, creatorAddress ])
     }
 
-    async deployToken(name, symbol, decimals, creatorAddress) {
+    deployToken(name, symbol, decimals, creatorAddress) {
         const parametersTypes = this.getContractConstructorParameters(this.contracts.token.abi)
         if (parametersTypes.length == 3) {
             const parametersBin = this.web3.eth.abi.encodeParameters(parametersTypes, [ name, symbol, decimals ])
@@ -75,7 +75,7 @@ class HelperQtum {
         }
     }
 
-    async deployL2(oracle, ecrpkAddress, creatorAddress) {
+    deployL2(oracle, ecrpkAddress, creatorAddress) {
         const parametersTypes = this.getContractConstructorParameters(this.contracts.l2.abi)
         if (parametersTypes.length == 2) {
             const parametersBin = this.web3.eth.abi.encodeParameters(parametersTypes, [ oracle, ecrpkAddress ])
@@ -84,55 +84,15 @@ class HelperQtum {
         }
     }
 
-    // CRYPTO
-
-    // data - data to hash as Buffer
-    // returns hash as Buffer
-    sha3(data) {
-        return EthUtil.sha3(data)
-    }
-
-    // data - data to hash as Buffer
-    // returns hash as Buffer
-    sha256(data) {
-        return EthUtil.sha256(data)
-    }
-
-    privateKeyToBuffer(privateKey) {
-        return wif.decode(privateKey).privateKey
-    }
-
-    // privateKey - private key as string or Buffer
-    // compressed - flag indicates if public key should be in compressed format
-    // returns public key as Buffer
-    privateKeyToPublicKey(privateKey, compressed = true) {
-        if (typeof(privateKey) == 'string') {
-            privateKey = this.privateKeyToBuffer(privateKey)
-        }
-        return secp256k1.publicKeyCreate(privateKey, compressed)
-    }
-
-    privateKeyToAddressQtum(publicKey) {
-        const publicKeyObj = new QtumCore.PublicKey(publicKey.toString('hex'))
-        const addressQtum = publicKeyObj.toAddress(this.network).toString()
-        return addressQtum
-    }
-
-    privateKeyToAddressEthereum(publicKey) {
-        const publicKeyHash = this.sha256(publicKey)
-        const addressEthereum = new RIPEMD160().update(publicKeyHash).digest()
-        return addressEthereum.toString('hex')
-    }
-
-    addressQtumToEthereum(addressQtum) {
-        const addressEthereum = bs58check.decode(addressQtum).slice(1)
-        return `0x${addressEthereum.toString('hex')}`
-    }
-
     // HELPER FUNCTIONS
 
-    async transferQtum(receiverAddress, amount) {
+    transferQtum(receiverAddress, amount) {
         return this.rpc.rawCall('sendtoaddress', [ receiverAddress, amount ])
+    }
+
+    addressQtumToAddressEthereum(addressQtum) {
+        const addressEthereum = bs58check.decode(addressQtum).slice(1)
+        return `0x${addressEthereum.toString('hex')}`
     }
 
     getContractConstructorParameters(abi) {

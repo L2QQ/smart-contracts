@@ -18,7 +18,7 @@ class HelperEthereum {
                 bin: fs.readFileSync('./bin/L2Ethereum.bin').toString()
             }
         }
-        this.gasLimit = 3000000
+        this.gasLimit = 2500000
         this.gasPrice = 10000000000
     }
 

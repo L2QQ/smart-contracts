@@ -142,12 +142,12 @@ async function prepareQtum() {
 }
 
 async function prepare() {
-    await prepareEthereum()
+    //await prepareEthereum()
     await prepareQtum()
 }
 
 async function deploy() {
-    //await deployTestTokens()
+    await deployTestTokens()
     await deployL2()
 }
 

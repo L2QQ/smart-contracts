@@ -3,7 +3,7 @@
 OUTPUT_PATH="./bin"
 OUTPUT_COMPONENTS="--abi --bin --devdoc"
 OPTIMIZATION="--optimize --optimize-runs 200"
-EVM_VERSION="" # "--evm-version homestead"
+EVM_VERSION="--evm-version homestead"
 ALLOWED_PATHS="--allow-paths ."
 OTHER_FLAGS="--overwrite"
 

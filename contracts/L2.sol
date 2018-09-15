@@ -262,6 +262,10 @@ contract L2 {
 
     // READ FUNCTIONS
 
+    function getBalanceInternal(address token) public view returns (uint256) {
+        return balances[token];
+    }
+
     function getExpiration(address channelOwner) public view returns (uint256) {
         return channels[channelOwner].expiration;
     }

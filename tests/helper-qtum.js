@@ -1,12 +1,8 @@
 const fs = require('fs')
 const Web3 = require('web3')
-const EthUtil = require('ethereumjs-util')
 const { QtumRPC } = require('qtumjs')
 const QtumCore = require('qtumcore-lib')
-const wif = require('wif')
-const secp256k1 = require('secp256k1')
 const bs58check = require('bs58check')
-const RIPEMD160 = require('ripemd160')
 
 
 class HelperQtum {

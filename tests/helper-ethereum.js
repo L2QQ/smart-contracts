@@ -1,7 +1,6 @@
 const fs = require('fs')
 const Web3 = require('web3')
 const EthTx = require('ethereumjs-tx')
-const EthUtil = require('ethereumjs-util')
 const EthWallet = require('ethereumjs-wallet')
 
 
@@ -23,48 +22,51 @@ class HelperEthereum {
         this.gasPrice = 10000000000
     }
 
-    async requestBalance(address) {
-        const balance = await this.web3.eth.getBalance(address)
-        return Web3.utils.fromWei(balance, 'ether')
+    requestBalance(address) {
+        return this.web3.eth.getBalance(address).then(balance => {
+            return Web3.utils.fromWei(balance, 'ether')
+        })
     }
 
-    async deployToken(name, symbol, decimals, creatorAddress, creatorPrivateKey) {
+    deployToken(name, symbol, decimals, creatorAddress, creatorPrivateKey) {
         const parametersTypes = this.getContractConstructorParameters(this.contracts.token.abi)
         if (parametersTypes.length == 3) {
             const parametersBin = this.web3.eth.abi.encodeParameters(parametersTypes, [ name, symbol, decimals ])
             const bytecode = `0x${this.contracts.token.bin}${parametersBin.slice(2)}`
-            const nonce = await this.getNonce(creatorAddress)
-            const transaction = {
-                from: creatorAddress,
-                value: 0,
-                data: bytecode,
-                gas: this.gasLimit,
-                gasPrice: this.gasPrice,
-                nonce: nonce,
-                privateKey: creatorPrivateKey
-            }
-            const signedTransaction = this.signTransaction(transaction)
-            return this.sendSignedTransaction(signedTransaction)
+            return this.getNonce(creatorAddress).then(nonce => {
+                const transaction = {
+                    from: creatorAddress,
+                    value: 0,
+                    data: bytecode,
+                    gas: this.gasLimit,
+                    gasPrice: this.gasPrice,
+                    nonce: nonce,
+                    privateKey: creatorPrivateKey
+                }
+                const signedTransaction = this.signTransaction(transaction)
+                return this.sendSignedTransaction(signedTransaction)
+            })
         }
     }
 
-    async deployL2(oracle, creatorAddress, creatorPrivateKey) {
+    deployL2(oracle, creatorAddress, creatorPrivateKey) {
         const parametersTypes = this.getContractConstructorParameters(this.contracts.l2.abi)
         if (parametersTypes.length == 1) {
             const parametersBin = this.web3.eth.abi.encodeParameters(parametersTypes, [ oracle ])
             const bytecode = `0x${this.contracts.token.bin}${parametersBin.slice(2)}`
-            const nonce = await this.getNonce(creatorAddress)
-            const transaction = {
-                from: creatorAddress,
-                value: 0,
-                data: bytecode,
-                gas: this.gasLimit,
-                gasPrice: this.gasPrice,
-                nonce: nonce,
-                privateKey: creatorPrivateKey
-            }
-            const signedTransaction = this.signTransaction(transaction)
-            return this.sendSignedTransaction(signedTransaction)
+            return this.getNonce(creatorAddress).then(nonce => {
+                const transaction = {
+                    from: creatorAddress,
+                    value: 0,
+                    data: bytecode,
+                    gas: this.gasLimit,
+                    gasPrice: this.gasPrice,
+                    nonce: nonce,
+                    privateKey: creatorPrivateKey
+                }
+                const signedTransaction = this.signTransaction(transaction)
+                return this.sendSignedTransaction(signedTransaction)
+            })
         }
     }
 
@@ -87,20 +89,21 @@ class HelperEthereum {
     // amount - amount of weis that should be send with the transaction as string
     // receiverAddress - address of transaction receiver in hex format starting from '0x' as string
     // senderPrivateKey - private key used to sign transaction to become its author as 32-bytes Buffer
-    async transferEther(amount, receiverAddress, senderPrivateKey) {
+    transferEther(amount, receiverAddress, senderPrivateKey) {
         const senderAddress = `0x${this.getAddressFromPrivateKey(senderPrivateKey).toString('hex')}`
-        const nonce = await this.getNonce(senderAddress)
-        const transaction = {
-            from: senderAddress,
-            to: receiverAddress,
-            value: amount,
-            gas: 21000,
-            gasPrice: this.gasPrice,
-            nonce: nonce,
-            privateKey: senderPrivateKey
-        }
-        const signedTransaction = this.signTransaction(transaction)
-        return this.sendSignedTransaction(signedTransaction)
+        return this.getNonce(senderAddress).then(nonce => {
+            const transaction = {
+                from: senderAddress,
+                to: receiverAddress,
+                value: amount,
+                gas: 21000,
+                gasPrice: this.gasPrice,
+                nonce: nonce,
+                privateKey: senderPrivateKey
+            }
+            const signedTransaction = this.signTransaction(transaction)
+            return this.sendSignedTransaction(signedTransaction)
+        })
     }
 
     // Signs transaction offline so it is ready to send to a blockchain
@@ -142,25 +145,12 @@ class HelperEthereum {
         return this.web3.eth.getTransactionCount(address)
     }
 
-    // Keys management
-
-    // privateKey - Ethereum private key as Buffer
-    getPublicKeyFromPrivateKey(privateKey) {
-        const wallet = EthWallet.fromPrivateKey(privateKey)
-        const publicKey = wallet.getPublicKey()
-        return publicKey
-    }
+    // Helper functions
 
     // privateKey - Ethereum public key as Buffer
     getAddressFromPrivateKey(privateKey) {
         const wallet = EthWallet.fromPrivateKey(privateKey)
         const address = wallet.getAddress()
-        return address
-    }
-
-    // privateKey - Ethereum private key as Buffer
-    getAddressFromPublicKey(publicKey) {
-        const address = EthUtil.sha3(publicKey.slice(1)).slice(-20)
         return address
     }
 }

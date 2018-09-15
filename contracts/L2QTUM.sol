@@ -46,10 +46,10 @@ contract L2QTUM is L2 {
             publicKeyY := mload(add(ptr, 0x60))
             mstore(0x40, add(ptr, 0x84))
         }
-        // Get SHA256 hash of just recovered public key
+        // Get SHA-256 hash of just recovered public key
         // Hack: call sha256() method using assembly since usual calling sha256() fails for some reason
         bytes32 publicKeyHash;
-        uint8 prefix = (publicKeyY & 1) == 0 ? 2 : 3;
+        uint8 prefix = uint8(publicKeyY & 1) + 2;
         assembly {
             let ptr := mload(0x40)
             mstore8(ptr, prefix)
@@ -61,7 +61,7 @@ contract L2QTUM is L2 {
             publicKeyHash := mload(ptr)
             mstore(0x40, add(ptr, 0x22))
         }
-        // Get RIPEMD160 hash receiving signer address which can be compared to `msg.sender`
+        // Get RIPEMD-160 hash receiving signer address which can be compared to `msg.sender`
         return address(ripemd160(abi.encodePacked(publicKeyHash)));
     }
 }

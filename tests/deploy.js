@@ -36,33 +36,36 @@ async function waitForTransactionQtum(transactionId) {
 async function deployERC20(name, symbol, decimals) {
     const creatorAddress = config.ethereum.accounts.tokenOwner.address
     const creatorPrivateKey = config.ethereum.accounts.tokenOwner.privateKey
+    console.log(`[ETHEREUM] Deploying ERC20 token '${name}' (${symbol}) with ${decimals} decimals...`)
     const result = await helperEthereum.deployToken(name, symbol, decimals, creatorAddress, creatorPrivateKey)
     if (!result.status) {
         throw new Error('Unable to deploy ERC20 token to Ethereum')
     }
-    console.log(`ERC20 token '${name}' (${symbol}) deployed to Ethereum at address: ${result.contractAddress}`)
+    console.log(`ERC20 token '${name}' (${symbol}) deployed to Ethereum at address: ${result.contractAddress} (${result.gasUsed} - ${result.cumulativeGasUsed} gas)`)
     return result
 }
 
 async function deployQRC20(name, symbol, decimals) {
     const creatorAddress = config.qtum.accounts.tokenOwner.address
+    console.log(`Deploying QRC20 token '${name}' (${symbol}) with ${decimals} decimals...`)
     const result = await helperQtum.deployToken(name, symbol, decimals, creatorAddress)
     const transactionReceipt = await waitForTransactionQtum(result.txid)
     if (transactionReceipt[0].excepted != 'None') {
         throw new Error('Unable to deploy QRC20 token to QTUM')
     }
-    console.log(`QRC20 token '${name}' (${symbol}) deployed to QTUM at address: 0x${result.address}`)
+    console.log(`[QTUM] QRC20 token '${name}' (${symbol}) deployed to QTUM at address: 0x${result.address} (${result.gasUsed} - ${result.cumulativeGasUsed} gas)`)
     return result
 }
 
 async function deployECRecoverPublicKey() {
     const creatorAddress = config.qtum.accounts.l2Owner.address
+    console.log('[QTUM] Deploying ECRecoverPublicKey contract...')
     const result = await helperQtum.deployECRecoverPublicKey(creatorAddress)
     const transactionReceipt = await waitForTransactionQtum(result.txid)
     if (transactionReceipt[0].excepted != 'None') {
         throw new Error('Unable to deploy ECRecoverPublicKey contract to QTUM')
     }
-    console.log(`ECRecoverPublicKey contract deployed to QTUM at address: 0x${result.address}`)
+    console.log(`ECRecoverPublicKey contract deployed to QTUM at address: 0x${result.address} (${result.gasUsed} - ${result.cumulativeGasUsed} gas)`)
     return result
 }
 
@@ -70,23 +73,25 @@ async function deployL2Ethereum() {
     const oracleAddress = config.ethereum.accounts.l2Oracle.address
     const creatorAddress = config.ethereum.accounts.l2Owner.address
     const creatorPrivateKey = config.ethereum.accounts.l2Owner.privateKey
+    console.log(`[ETHEREUM] Deploying L2 contract with oracle ${oracleAddress}...`)
     const result = await helperEthereum.deployL2(oracleAddress, creatorAddress, creatorPrivateKey)
     if (!result.status) {
         throw new Error('Unable to deploy L2 contract to Ethereum')
     }
-    console.log(`L2 contract deployed to Ethereum at address: ${result.contractAddress}`)
+    console.log(`L2 contract deployed to Ethereum at address: ${result.contractAddress} (${result.gasUsed} - ${result.cumulativeGasUsed} gas)`)
     return result
 }
 
 async function deployL2Qtum(ecrpkAddress) {
     const oracleAddress = helperQtum.addressQtumToAddressEthereum(config.qtum.accounts.l2Oracle.address)
     const creatorAddress = config.qtum.accounts.l2Owner.address
+    console.log(`[QTUM] Deploying L2 contract with oracle ${oracleAddress} and ECRecoverPublicKey contract ${ecrpkAddress}...`)
     const result = await helperQtum.deployL2(oracleAddress, ecrpkAddress, creatorAddress)
     const transactionReceipt = await waitForTransactionQtum(result.txid)
     if (transactionReceipt[0].excepted != 'None') {
         throw new Error('Unable to deploy L2 contract to QTUM')
     }
-    console.log(`L2 contract deployed to QTUM at address: 0x${result.address}`)
+    console.log(`L2 contract deployed to QTUM at address: 0x${result.address} (${result.gasUsed} - ${result.cumulativeGasUsed} gas)`)
     return result
 }
 
@@ -142,7 +147,7 @@ async function prepare() {
 }
 
 async function deploy() {
-    await deployTestTokens()
+    //await deployTestTokens()
     await deployL2()
 }
 

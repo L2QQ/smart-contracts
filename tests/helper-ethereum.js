@@ -18,7 +18,7 @@ class HelperEthereum {
                 bin: fs.readFileSync('./bin/L2Ethereum.bin').toString()
             }
         }
-        this.gasLimit = 2500000
+        this.gasLimit = 3000000
         this.gasPrice = 10000000000
     }
 
@@ -53,7 +53,7 @@ class HelperEthereum {
         const parametersTypes = this.getContractConstructorParameters(this.contracts.l2.abi)
         if (parametersTypes.length == 1) {
             const parametersBin = this.web3.eth.abi.encodeParameters(parametersTypes, [ oracle ])
-            const bytecode = `0x${this.contracts.token.bin}${parametersBin.slice(2)}`
+            const bytecode = `0x${this.contracts.l2.bin}${parametersBin.slice(2)}`
             return this.getNonce(creatorAddress).then(nonce => {
                 const transaction = {
                     from: creatorAddress,

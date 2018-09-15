@@ -1,4 +1,4 @@
-pragma solidity ^0.4.24;
+pragma solidity ^0.4.25;
 
 import './common/ERC20.sol';
 import './common/SafeMath.sol';
@@ -75,18 +75,18 @@ contract L2 {
 
     /// @dev Throws if channel cannot be withdrawn.
     modifier canWithdraw(address token) {
-        Channel storage channel = channels[msg.sender];
-        Account storage account = channel.accounts[token];
+        Account memory account = channels[msg.sender].accounts[token];
         // There should be something that can be withdrawn on the channel
         require(getAvailableBalance(account) > 0);
         // The channel should be either prepared for withdraw by owner or expired
-        require(account.withdrawable > 0 || isChannelExpired(channel));
+        require(account.withdrawable > 0 || isChannelExpired(channels[msg.sender]));
         _;
     }
 
 
     /// @dev Constructor sets initial owner and oracle addresses.
     constructor(address _oracle) public {
+        require(_oracle != address(0));
         owner = msg.sender;
         oracle = _oracle;
     }
@@ -173,7 +173,7 @@ contract L2 {
         // Check if channel is expired and there is something we should change in channel
         if (isChannelExpired(channel)) {
             // Before widthdraw it is necessary to apply current balance change
-            updateBalance(msg.sender, address(0));
+            updateBalance(account, address(0));
             // Before widthdraw it is also necessary to update withdrawable amount
             updateWithdrawable(account, account.balance);
         }
@@ -192,7 +192,7 @@ contract L2 {
         // Check if channel is expired and there is something we should change in channel
         if (isChannelExpired(channel)) {
             // Before widthdraw it is necessary to apply current balance change
-            updateBalance(msg.sender, token);
+            updateBalance(account, token);
             // Before widthdraw it is also necessary to update withdrawable amount
             updateWithdrawable(account, account.balance);
         }
@@ -217,7 +217,7 @@ contract L2 {
     )
         public
     {
-        Channel storage channel = channels[msg.sender];
+        Channel storage channel = channels[channelOwner];
         Account storage account = channel.accounts[token];
         require(channel.expiration > 0 && nonce > account.nonce);
         require(change >= 0 || account.balance >= uint256(-change));
@@ -240,14 +240,14 @@ contract L2 {
         if (signer == owner) {
             if (apply) {
                 // Applying balance change to a account balance is requested so just do it
-                updateBalance(channelOwner, token);
+                updateBalance(account, token);
             }
             if (free > 0) {
                 updateWithdrawable(account, free);
             }
         }
         account.nonce = nonce;
-        emit ChannelUpdate(msg.sender, token, account.balance, account.change, account.withdrawable, account.nonce);
+        emit ChannelUpdate(channelOwner, token, account.balance, account.change, account.withdrawable, account.nonce);
     }
 
     /// @dev Extends expiration of the channel by user.
@@ -283,8 +283,7 @@ contract L2 {
     }
 
     function getAvailable(address channelOwner, address token) public view returns (uint256) {
-        Account memory account = channels[channelOwner].accounts[token];
-        return getAppliedBalance(account);
+        return getAppliedBalance(channels[channelOwner].accounts[token]);
     }
 
     // INTERNAL FUNCTIONS
@@ -295,8 +294,7 @@ contract L2 {
     // PRIVATE FUNCTIONS
 
     /// @dev Updates account balance according to balance change value.
-    function updateBalance(address channelOwner, address token) private {
-        Account storage account = channels[channelOwner].accounts[token];
+    function updateBalance(Account storage account, address token) private {
         if (account.change > 0) {
             balances[token] = balances[token].sub(uint256(account.change));
             account.balance = account.balance.add(uint256(account.change));

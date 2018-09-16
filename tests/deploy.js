@@ -39,9 +39,9 @@ async function deployERC20(name, symbol, decimals) {
     console.log(`[ETHEREUM] Deploying ERC20 token '${name}' (${symbol}) with ${decimals} decimals...`)
     const result = await helperEthereum.deployToken(name, symbol, decimals, creatorAddress, creatorPrivateKey)
     if (!result.status) {
-        throw new Error('[ETHEREUM] Unable to deploy ERC20 token to Ethereum')
+        throw new Error('[ETHEREUM] Unable to deploy ERC20 token')
     }
-    console.log(`[ETHEREUM] ERC20 token '${name}' (${symbol}) deployed to Ethereum at address: ${result.contractAddress} (${result.gasUsed} - ${result.cumulativeGasUsed} gas)`)
+    console.log(`[ETHEREUM] ERC20 token '${name}' (${symbol}) deployed at address: ${result.contractAddress} (${result.gasUsed} gas used)`)
     return result
 }
 
@@ -51,9 +51,9 @@ async function deployQRC20(name, symbol, decimals) {
     const result = await helperQtum.deployToken(name, symbol, decimals, creatorAddress)
     const transactionReceipt = await waitForTransactionQtum(result.txid)
     if (transactionReceipt[0].excepted != 'None') {
-        throw new Error('[QTUM] Unable to deploy QRC20 token to QTUM')
+        throw new Error('[QTUM] Unable to deploy QRC20 token')
     }
-    console.log(`[QTUM] QRC20 token '${name}' (${symbol}) deployed to QTUM at address: 0x${result.address} (${transactionReceipt[0].gasUsed} - ${transactionReceipt[0].cumulativeGasUsed} gas)`)
+    console.log(`[QTUM] QRC20 token '${name}' (${symbol}) deployed at address: 0x${result.address} (${transactionReceipt[0].gasUsed} gas used)`)
     return result
 }
 
@@ -63,9 +63,9 @@ async function deployECRecoverPublicKey() {
     const result = await helperQtum.deployECRecoverPublicKey(creatorAddress)
     const transactionReceipt = await waitForTransactionQtum(result.txid)
     if (transactionReceipt[0].excepted != 'None') {
-        throw new Error('[QTUM] Unable to deploy ECRecoverPublicKey contract to QTUM')
+        throw new Error('[QTUM] Unable to deploy ECRecoverPublicKey contract')
     }
-    console.log(`[QTUM] ECRecoverPublicKey contract deployed to QTUM at address: 0x${result.address} (${transactionReceipt[0].gasUsed} - ${transactionReceipt[0].cumulativeGasUsed} gas)`)
+    console.log(`[QTUM] ECRecoverPublicKey contract deployed at address: 0x${result.address} (${transactionReceipt[0].gasUsed} gas used)`)
     return result
 }
 
@@ -76,9 +76,9 @@ async function deployL2Ethereum() {
     console.log(`[ETHEREUM] Deploying L2 contract with oracle ${oracleAddress}...`)
     const result = await helperEthereum.deployL2(oracleAddress, creatorAddress, creatorPrivateKey)
     if (!result.status) {
-        throw new Error('[ETHEREUM] Unable to deploy L2 contract to Ethereum')
+        throw new Error('[ETHEREUM] Unable to deploy L2 contract')
     }
-    console.log(`[ETHEREUM] L2 contract deployed to Ethereum at address: ${result.contractAddress} (${result.gasUsed} - ${result.cumulativeGasUsed} gas)`)
+    console.log(`[ETHEREUM] L2 contract deployed at address: ${result.contractAddress} (${result.gasUsed} gas used)`)
     return result
 }
 
@@ -89,9 +89,9 @@ async function deployL2Qtum(ecrpkAddress) {
     const result = await helperQtum.deployL2(oracleAddress, ecrpkAddress, creatorAddress)
     const transactionReceipt = await waitForTransactionQtum(result.txid)
     if (transactionReceipt[0].excepted != 'None') {
-        throw new Error('[QTUM] Unable to deploy L2 contract to QTUM')
+        throw new Error('[QTUM] Unable to deploy L2 contract')
     }
-    console.log(`[QTUM] L2 contract deployed to QTUM at address: 0x${result.address} (${transactionReceipt[0].gasUsed} - ${transactionReceipt[0].cumulativeGasUsed} gas)`)
+    console.log(`[QTUM] L2 contract deployed at address: 0x${result.address} (${transactionReceipt[0].gasUsed} gas used)`)
     return result
 }
 

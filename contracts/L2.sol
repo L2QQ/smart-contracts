@@ -8,6 +8,10 @@ import './common/SafeMath.sol';
 contract L2 {
     using SafeMath for uint256;
 
+    ///////////////////////////////////////////////////
+    // CONTRACT STRUCTURES
+    ///////////////////////////////////////////////////
+
     struct Account {
         // Amount of either ETH/QTUM or tokens available to trade by user
         uint256 balance;
@@ -20,18 +24,25 @@ contract L2 {
     }
 
     struct Channel {
-        // Channel expiration date (timestamp)
+        // Channel expiration date (timestamp in seconds)
         uint256 expiration;
         // Accounts related to the channel where key of a map is token address
         // Zero key [address(0)] is used for ETH/QTUM instead of tokens
         mapping(address => Account) accounts;
+        // We also save contract owner address at moment of channel creation or extension to make sure
+        // all off-chain transactions signed by contract owner will be able to use by channel owner
+        // in case if contract owner is changed for emergency (just to make it really reliable)
+        address contractOwner;
     }
 
+    ///////////////////////////////////////////////////
+    // CONTRACT MEMBERS
+    ///////////////////////////////////////////////////
 
     // Minimal TTL that can be used to extend existing channel
-    uint256 constant TTL_MIN = 2 days;
+    uint256 constant public TTL_MIN = 1 days;
     // Initial TTL for new channels created just after the first deposit
-    uint256 constant TTL_DEFAULT = 14 days;
+    uint256 constant public TTL_DEFAULT = 7 days;
 
     // Address of account which has all permissions to manage channels
     address public owner;
@@ -39,17 +50,22 @@ contract L2 {
     address public oracle;
 
     // Existing channels where key of map is address of account which owns a channel
-    mapping(address => Channel) channels;
+    mapping(address => Channel) private channels;
 
     // Amount of ETH/QTUM or tokens owned by the contract
     // Zero key [address(0)] is used for ETH/QTUM instead of tokens
-    mapping(address => uint256) balances;
+    mapping(address => uint256) private balances;
 
+    ///////////////////////////////////////////////////
+    // EVENTS
+    ///////////////////////////////////////////////////
 
     event DepositInternal(address indexed token, uint256 amount, uint256 balance);
     event WithdrawInternal(address indexed token, uint256 amount, uint256 balance);
+
     event Deposit(address indexed channelOwner, address indexed token, uint256 amount, uint256 balance);
     event Withdraw(address indexed channelOwner, address indexed token, uint256 amount, uint256 balance);
+
     event ChannelExtend(address indexed channelOwner, uint256 expiration);
     event ChannelUpdate(
         address indexed channelOwner,
@@ -59,7 +75,10 @@ contract L2 {
         uint256 withdrawable,
         uint256 nonce
     );
-    
+
+    ///////////////////////////////////////////////////
+    // MODIFIERS
+    ///////////////////////////////////////////////////
 
     /// @dev Throws if called by any account other than the owner.
     modifier onlyOwner() {
@@ -73,16 +92,24 @@ contract L2 {
         _;
     }
 
-    /// @dev Throws if channel cannot be withdrawn.
-    modifier canWithdraw(address token) {
-        Account memory account = channels[msg.sender].accounts[token];
-        // There should be something that can be withdrawn on the channel
-        require(getAvailableBalance(account) > 0);
-        // The channel should be either prepared for withdraw by owner or expired
-        require(account.withdrawable > 0 || isChannelExpired(channels[msg.sender]));
+    /// @dev Throws if channel exists and expired.
+    modifier notExpired() {
+        require(!isChannelExpired(channels[msg.sender]));
         _;
     }
 
+    /// @dev Throws if channel cannot be withdrawn.
+    modifier canWithdraw(address token) {
+        // There should be something that can be withdrawn on the channel
+        require(getBalanceTotal(msg.sender, token) > 0);
+        // The channel should be either prepared for withdraw by owner or expired
+        require(getBalanceWithdrawable(msg.sender, token) > 0 || isChannelExpired(channels[msg.sender]));
+        _;
+    }
+
+    ///////////////////////////////////////////////////
+    // CONTRACT FUNCTIONS
+    ///////////////////////////////////////////////////
 
     /// @dev Constructor sets initial owner and oracle addresses.
     constructor(address _oracle) public {
@@ -101,6 +128,10 @@ contract L2 {
         require(_owner != address(0));
         owner = _owner;
     }
+
+    ///////////////////////////////////////////////////
+    // INTERNAL BALANCES FUNCTIONS
+    ///////////////////////////////////////////////////
 
     /// @dev Deposits ETH/QTUM to the contract balance.
     function depositInternal() public payable {
@@ -135,13 +166,18 @@ contract L2 {
         emit WithdrawInternal(token, amount, balances[token]);
     }
 
+    ///////////////////////////////////////////////////
+    // CHANNEL BALANCES FUNCTIONS
+    ///////////////////////////////////////////////////
+
     /// @dev Deposits ETH/QTUM to a channel by user.
-    function deposit() public payable {
+    function deposit() public notExpired payable {
         require(msg.value > 0);
         Channel storage channel = channels[msg.sender];
         Account storage account = channel.accounts[address(0)];
         if (channel.expiration == 0) {
             channel.expiration = now.add(TTL_DEFAULT);
+            channel.contractOwner = owner;
             emit ChannelExtend(msg.sender, channel.expiration);
         }
         account.balance = account.balance.add(msg.value);
@@ -150,7 +186,7 @@ contract L2 {
     }
 
     /// @dev Deposits tokens to a channel by user.
-    function deposit(address token, uint256 amount) public {
+    function deposit(address token, uint256 amount) public notExpired {
         require(token != address(0) && amount > 0);
         // Transfer tokens from the sender to the contract and check result
         // Note: At least specified amount of tokens should be allowed to spend by the contract before deposit!
@@ -159,6 +195,7 @@ contract L2 {
         Account storage account = channel.accounts[token];
         if (channel.expiration == 0) {
             channel.expiration = now.add(TTL_DEFAULT);
+            channel.contractOwner = owner;
             emit ChannelExtend(msg.sender, channel.expiration);
         }
         account.balance = account.balance.add(amount);
@@ -203,8 +240,32 @@ contract L2 {
         emit ChannelUpdate(msg.sender, token, account.balance, account.change, account.withdrawable, account.nonce);
     }
 
-    //// @dev Pushes offchain transaction with most recent balance change by user or by contract owner.
-    function updateBalanceChange(
+    ///////////////////////////////////////////////////
+    // CHANNEL FUNCTIONS
+    ///////////////////////////////////////////////////
+
+    /// @dev Extends expiration of sender's channel.
+    function extendChannel(uint256 ttl) public {
+        require(ttl >= TTL_MIN);
+        Channel storage channel = channels[msg.sender];
+        uint256 expiration = now.add(ttl);
+        require(channel.expiration > 0 && channel.expiration < expiration);
+        channel.expiration = expiration;
+        channel.contractOwner = owner;
+        emit ChannelExtend(msg.sender, channel.expiration);
+    }
+
+    /// @dev Pushes off-chain transaction with most recent balance change by user or by contract owner.
+    /// @param channelOwner Owner address of channel for which off-chain transaction is signed.
+    /// @param token Address of token contract to identify the channel (zero address used for ETH/QTUM).
+    /// @param change New balance change value.
+    /// @param nonce Index of off-chain transaction inside the channel (counted separately for each channel and token).
+    /// @param apply Flag indicating if new balance change should be applied to the channel balance.
+    /// @param free Amount of currency which will be allowed to withdraw (moved from `balance` to `withdrawable`).
+    /// @param v Signature: recovery value in range from 27 to 30.
+    /// @param r Signature: first 32 bytes.
+    /// @param s Signature: second 32 bytes.
+    function updateChannel(
         address channelOwner,
         address token,
         int256 change,
@@ -225,24 +286,25 @@ contract L2 {
         bytes32 messageHash = keccak256(abi.encodePacked(channelOwner, token, change, nonce, apply, free));
         address signer = recoverSignerAddress(messageHash, v, r, s);
         if (signer == channelOwner) {
-            // Transaction from user who owns the channel
-            // Only contract owner can push offchain transactions signed by channel owner if the channel not expired
+            // Transaction signed by user who owns the channel
+            // Only contract owner can push off-chain transactions signed by channel owner if the channel not expired
             require(isChannelExpired(channel) || msg.sender == owner);
-        } else if (signer == owner) {
-            // Transaction from the contract owner
-            // Only channel owner can push offchain transactions signed by contract owner if the channel not expired
+        } else if (signer == owner || signer == channel.contractOwner) {
+            // Transaction signed by the contract owner
+            // Only channel owner can push off-chain transactions signed by contract owner if the channel not expired
             require(isChannelExpired(channel) || msg.sender == channelOwner);
         } else {
             // Specified arguments are not valid
             revert();
         }
         account.change = change;
-        if (signer == owner) {
+        if (signer == owner || signer == channel.contractOwner) {
             if (apply) {
                 // Applying balance change to a account balance is requested so just do it
                 updateBalance(account, token);
             }
             if (free > 0) {
+                // Move requested amount of currency from `balance` to `withdrawable`
                 updateWithdrawable(account, free);
             }
         }
@@ -250,52 +312,62 @@ contract L2 {
         emit ChannelUpdate(channelOwner, token, account.balance, account.change, account.withdrawable, account.nonce);
     }
 
-    /// @dev Extends expiration of the channel by user.
-    function extendChannel(uint256 ttl) public {
-        require(ttl >= TTL_MIN);
-        Channel storage channel = channels[msg.sender];
-        uint256 expiration = now.add(ttl);
-        require(channel.expiration > 0 && channel.expiration < expiration);
-        channel.expiration = expiration;
-        emit ChannelExtend(msg.sender, channel.expiration);
-    }
-
+    ///////////////////////////////////////////////////
     // READ FUNCTIONS
+    ///////////////////////////////////////////////////
 
+    /// @dev Returns internal balance of the contract.
     function getBalanceInternal(address token) public view returns (uint256) {
         return balances[token];
     }
 
+    /// @dev Returns channel expiration time as timestamp in seconds.
     function getExpiration(address channelOwner) public view returns (uint256) {
         return channels[channelOwner].expiration;
     }
 
+    /// @dev Returns channel balance.
     function getBalance(address channelOwner, address token) public view returns (uint256) {
         return channels[channelOwner].accounts[token].balance;
     }
 
+    /// @dev Returns channel balance change pending to move to/from channel balance.
     function getBalanceChange(address channelOwner, address token) public view returns (int256) {
         return channels[channelOwner].accounts[token].change;
     }
 
-    function getWithdrawable(address channelOwner, address token) public view returns (uint256) {
+    /// @dev Returns amount of currency available to withdraw from channel by user.
+    function getBalanceWithdrawable(address channelOwner, address token) public view returns (uint256) {
         return channels[channelOwner].accounts[token].withdrawable;
     }
 
+    /// @dev Returns still available channel balance to use (balance + change).
+    function getBalanceAvailable(address channelOwner, address token) public view returns (uint256) {
+        Account memory account = channels[channelOwner].accounts[token];
+        return calcBalanceApplied(account);
+    }
+
+    /// @dev Returns total channel balance (balance + change + withdrawable).
+    function getBalanceTotal(address channelOwner, address token) public view returns (uint256) {
+        Account memory account = channels[channelOwner].accounts[token];
+        return calcBalanceApplied(account).add(account.withdrawable);
+    }
+
+    /// @dev Returns index of last pushed channel update transaction.
     function getNonce(address channelOwner, address token) public view returns (uint256) {
         return channels[channelOwner].accounts[token].nonce;
     }
 
-    function getAvailable(address channelOwner, address token) public view returns (uint256) {
-        return getAppliedBalance(channels[channelOwner].accounts[token]);
-    }
-
+    ///////////////////////////////////////////////////
     // INTERNAL FUNCTIONS
+    ///////////////////////////////////////////////////
 
     /// @dev Virtual function which should return signer address which can be compared to `msg.sender`.
     function recoverSignerAddress(bytes32 dataHash, uint8 v, bytes32 r, bytes32 s) internal returns (address);
 
+    ///////////////////////////////////////////////////
     // PRIVATE FUNCTIONS
+    ///////////////////////////////////////////////////
 
     /// @dev Updates account balance according to balance change value.
     function updateBalance(Account storage account, address token) private {
@@ -313,16 +385,19 @@ contract L2 {
     /// @dev Updates amount of ETH/QTUM or tokens allowed to withdraw by user.
     function updateWithdrawable(Account storage account, uint256 free) private {
         if (free > 0) {
+            require(free <= account.balance);
             account.balance = account.balance.sub(free);
             account.withdrawable = account.withdrawable.add(free);
         }
     }
 
+    /// @dev Returns true if channel timeout is expired (only for existing channel).
     function isChannelExpired(Channel memory channel) private view returns (bool) {
-        return now >= channel.expiration;
+        return channel.expiration > 0 && channel.expiration <= now;
     }
 
-    function getAppliedBalance(Account memory account) private pure returns (uint256) {
+    /// @dev Returns balance with considering balance change.
+    function calcBalanceApplied(Account memory account) private pure returns (uint256) {
         if (account.change > 0) {
             return account.balance.add(uint256(account.change));
         } else if (account.change < 0) {
@@ -330,9 +405,5 @@ contract L2 {
         } else {
             return account.balance;
         }
-    }
-
-    function getAvailableBalance(Account memory account) private pure returns (uint256) {
-        return getAppliedBalance(account).add(account.withdrawable);
     }
 }

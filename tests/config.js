@@ -43,7 +43,7 @@ module.exports = {
     qtum: {
         connection: {
             address: '52.14.93.190',
-            port: '18533',
+            port: '18532',
             username: 'wardencliffe',
             password: 'iYuN5iGNTLlyRi5mbxeBLUF18skVyG2HqNs2ANrUVS4=',
             testnet: true
@@ -51,15 +51,15 @@ module.exports = {
         accounts: {
             default: {
                 account: '',
-                address: 'qfjsCNVFxWRWbuNEyyFBRzpxrYGu8Ut3ut'
+                address: 'qgFgSvAzEGEGq885d5AM6MWU2Fetx5A4MB'
             },
             tokenOwner: {
                 account: 'token_owner',
-                address: 'qXuSATPBQh6C41EmrSuPF5Zud3BJ8BWzTQ'
+                address: 'qU2LUVXSjve42162x4zH85dCUSPzGYsd6Y'
             },
             l2Owner: {
                 account: 'l2_owner',
-                address: 'qXdqbhXfpkrheCW2Ugd7sQf956j8ZYuzco'
+                address: 'qK8Nni6K97CGYn1H5BQ81m8QUgfxEv8LhS'
             },
             l2Oracle: {
                 account: 'l2_oracle',
@@ -67,15 +67,15 @@ module.exports = {
             },
             userA: {
                 account: 'user_a',
-                address: 'qL7Y6VoPoGLbCQTSCP2saP2yjkZDtKvsPH'
+                address: 'qS6rUUizeZ1hpgZ2sgQeMsu1yd6vuu9GiE'
             },
             userB: {
                 account: 'user_b',
-                address: 'qZySw2czbLzyfX6whqbBdADgjGSRm7pL9u'
+                address: 'qc8nDxLPxx6xKMHzBYoFt85RLJAtGzkrRe'
             },
             userC: {
                 account: 'user_c',
-                address: 'qdq9dGXuJrgXUEhD8FeHXurUvhBKZuBpSF'
+                address: 'qTP6AiVeiUNKktGTSuf73bhpR6trHxqBHG'
             }
         },
         tokens: {
